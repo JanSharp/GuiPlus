@@ -92,16 +92,16 @@ return gui.register_class{
           caption = "value",
         },
         gui.dynamic_list{
-          source = "state.list",
-          on = "state.list",
+          name = "list",
+          list = "state.list",
           children = {
             {
               type = "label",
               name = "key",
               caption = gui.dynamic{
-                on = "scopes[1].index",
+                on = "scopes[1].key",
                 set = function(scopes, state)
-                  return tostring(scopes[1].index)
+                  return tostring(scopes[1].key)
                 end,
               },
             },

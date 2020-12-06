@@ -13,14 +13,13 @@ local unhook_internal
 -- what's left?
 -- table insert and remove function
 -- detect moves function
--- test unhooking
 -- deal with todos
 -- improve performance if at all possible
 
--- -- HACK: for debugging
--- local variables = require("__debugadapter__/variables.lua")
--- local vdescribe = variables.describe
--- local num = 0
+-- HACK: for debugging
+local variables = require("__debugadapter__/variables.lua")
+local vdescribe = variables.describe
+local num = 0
 
 -- this is slow-ish because it has to copy the parent location tables
 -- what? why is the main loop so much slower
@@ -28,27 +27,30 @@ local unhook_internal
 -- i think it's 20 + 80 + 80
 -- and it's slow because... because next() probably
 local function add_locations(internal, parent_locations, key)
+  local all_locations = internal.all_locations
+  local new_locataions = {}
+
   for parent_location in next, parent_locations do
     local location = {
       parent_location = parent_location,
     }
-    -- do -- HACK: for debugging
-    --   num = num + 1
-    --   local num_str = "<" .. tostring(num) .. ">"
-    --   local location_meta
-    --   location_meta = {
-    --     __debugline = function(_, short)
-    --       if short then
-    --         return num_str
-    --       end
-    --       setmetatable(location, nil)
-    --       local lineitem = vdescribe(location)
-    --       setmetatable(location, location_meta)
-    --       return lineitem
-    --     end,
-    --   }
-    --   setmetatable(location, location_meta)
-    -- end
+    do -- HACK: for debugging
+      num = num + 1
+      local num_str = "<" .. tostring(num) .. ">"
+      local location_meta
+      location_meta = {
+        __debugline = function(_, short)
+          if short then
+            return num_str
+          end
+          setmetatable(location, nil)
+          local lineitem = vdescribe(location)
+          setmetatable(location, location_meta)
+          return lineitem
+        end,
+      }
+      setmetatable(location, location_meta)
+    end
     do -- copy parent_location
       local size = #parent_location
       for i = 1, size do
@@ -65,7 +67,17 @@ local function add_locations(internal, parent_locations, key)
       locations_for_parent_locations[parent_location] = {location}
     end
 
-    internal.all_locations[location] = location
+    all_locations[location] = location
+    new_locataions[location] = location
+  end
+
+  -- TODO: don't iterate the entire data table
+  local fake_to_internal = internal.core.fake_to_internal
+  for child_key, child in next, internal.data do
+    local child_internal = fake_to_internal[child]
+    if child_internal then
+      add_locations(child_internal, new_locataions, child_key)
+    end
   end
 end
 
@@ -74,7 +86,7 @@ end
 local function remove_locations(internal, parent_locations, key)
   local all_locations = internal.all_locations
   local locations_to_remove = {}
-  for parent_location in pairs(parent_locations) do
+  for parent_location in next, parent_locations do
     local locations_for_parent_locations = internal.locations_for_parent_locations
     local locations = locations_for_parent_locations[parent_location]
     local count = #locations
@@ -95,7 +107,7 @@ local function remove_locations(internal, parent_locations, key)
   end
 
   local fake_to_internal = internal.core.fake_to_internal
-  for child_key, child in pairs(internal.data) do
+  for child_key, child in next, internal.data do
     local child_internal = fake_to_internal[child]
     if child_internal then
       remove_locations(child_internal, locations_to_remove, child_key)
@@ -129,7 +141,7 @@ function hook_table(source, core, all_parent_locations, key)
   local all_locations = {}
   local internal = {
     core = core,
-    all_locations = {},
+    all_locations = all_locations,
     locations_for_parent_locations = {},
     data = internal_data,
     -- lowest_changed_index = nil,
@@ -149,7 +161,7 @@ function hook_table(source, core, all_parent_locations, key)
     local nk, nv = next(source, k)
     source[k] = nil
     internal_data[k] = v
-    hook_value(v, core, source, all_locations, k)
+    hook_value(v, core, all_locations, k)
     k, v = nk, nv
   end
   -- source is now the fake table
@@ -180,7 +192,7 @@ function unhook_internal(fake, internal)
     fake.__internal = nil
 
     -- move data back
-    for k, v in pairs(internal.data) do
+    for k, v in next, internal.data do
       fake[k] = v
       local child_internal = fake_to_internal[v]
       if child_internal then
@@ -300,7 +312,7 @@ local function create_state(initial_state)
 end
 
 local function restore_metatables(state)
-  for _, internal in pairs(state.__internal.core.tables) do
+  for _, internal in next, state.__internal.core.tables do
     setmetatable(internal.fake, meta)
   end
 end

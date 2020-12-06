@@ -1,5 +1,6 @@
 
 local gui = require("gui-plus")
+local state_utils = require("state-utils")
 
 require("gui.register-classes")
 
@@ -17,25 +18,40 @@ script.on_load(function()
 end)
 
 script.on_event(defines.events.on_player_created, function(event)
-  local player = game.get_player(event.player_index)
+  -- local player = game.get_player(event.player_index)
 
-  local state = {
-    list = {},
-  }
+  -- local test4_state = {
+  --   list = {},
+  -- }
 
-  gui.instantiate(player.gui.screen, test4, state)
+  -- gui.instantiate(player.gui.screen, test4, test4_state)
 
-  gui.instantiate(player.gui.screen, foo, {count = 10})
+  -- gui.instantiate(player.gui.screen, foo, {count = 10})
+
+
+  local state = state_utils.create_state()
 
   local test = {
     "hello",
     "world",
+    deep = {"i'm deeply nested :)"},
   }
-  state.test = test
-  test[1], test[2] = test[2], test[1]
-  state.foo = test
-  state.foo = nil
-  state.test = nil
+  local deep = test.deep
+  state.foo = {
+    bar = {
+      test = test,
+    },
+    -- test = test,
+  }
+  state.foo.test = test
+
+  local bar = state.foo.bar
+  state_utils.unhook_table(bar)
+
+  state.foo.bar = nil
+
+  state.foo.test = nil
+
   local breakpoint
   -- creating states is alarmingly slow
   -- creating 2 states, in the process hooking 4 tables and adding locations 5 times

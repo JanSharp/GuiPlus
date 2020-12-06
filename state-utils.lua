@@ -6,26 +6,76 @@ local meta
 local hook_table
 local hook_value
 
-local function add_location(internal, parent_fake, parent_location, key)
-  local location = {}
-  do -- copy parent_location
-    local size = #parent_location
-    for i = 1, size do
-      location[i] = parent_location[i]
+-- local function add_location(internal, parent_fake, parent_location, key)
+--   local location = {
+--     parent_location = parent_location,
+--   }
+--   do -- copy parent_location
+--     local size = #parent_location
+--     for i = 1, size do
+--       location[i] = parent_location[i]
+--     end
+--     location[size+1] = key -- add latest key to the end
+--   end
+
+--   local locations_for_parent_fakes = internal.locations_for_parent_fakes
+--   local locations_for_parent_fake = locations_for_parent_fakes[parent_fake]
+--   if locations_for_parent_fake then
+--     locations_for_parent_fake[parent_location] = location
+--   else
+--     locations_for_parent_fakes[parent_fake] = {
+--       [parent_location] = location,
+--     }
+--   end
+
+--   internal.all_locations[location] = location
+-- end
+
+-- HACK: for debugging
+local variables = require("__debugadapter__/variables.lua")
+local vdescribe = variables.describe
+local num = 0
+
+local function add_locations(internal, parent_fake, parent_locations, key)
+  for parent_location in pairs(parent_locations) do
+    local location = {
+      parent_location = parent_location,
+    }
+    do -- HACK: for debugging
+      num = num + 1
+      local num_str = "<" .. tostring(num) .. ">"
+      local location_meta
+      location_meta = {
+        __debugline = function(_, short)
+          if short then
+            return num_str
+          end
+          setmetatable(location, nil)
+          local lineitem = vdescribe(location)
+          setmetatable(location, location_meta)
+          return lineitem
+        end,
+      }
+      setmetatable(location, location_meta)
     end
-    location[size+1] = key -- add latest key to the end
-  end
+    do -- copy parent_location
+      local size = #parent_location
+      for i = 1, size do
+        location[i] = parent_location[i]
+      end
+      location[size+1] = key -- add latest key to the end
+    end
 
-  local locations_for_parent_fakes = internal.locations_for_parent_fakes
-  local locations_for_parent_fake = locations_for_parent_fakes[parent_fake]
-  if locations_for_parent_fake then
-    locations_for_parent_fake[#locations_for_parent_fake+1] = location
-  else
-    locations_for_parent_fakes[parent_fake] = {location}
-  end
+    local locations_for_parent_fakes = internal.locations_for_parent_fakes
+    local locations_for_parent_fake = locations_for_parent_fakes[parent_fake]
+    if locations_for_parent_fake then
+      locations_for_parent_fake[#locations_for_parent_fake+1] = location
+    else
+      locations_for_parent_fakes[parent_fake] = {location}
+    end
 
-  internal.all_locations[location] = location
-  return location
+    internal.all_locations[location] = location
+  end
 end
 
 local function initial_hook(source)
@@ -41,11 +91,13 @@ local function initial_hook(source)
       },
     },
   }
-  return hook_table(source, core, fake_parent, {}, "state")
+  local location = {}
+  return hook_table(source, core, fake_parent, {[location] = location}, "state")
 end
 
-function hook_table(source, core, parent_fake, parent_location, key)
+function hook_table(source, core, parent_fake, all_parent_locations, key)
   local internal_data = {}
+  local all_locations = {}
   local internal = {
     core = core,
     all_locations = {},
@@ -60,7 +112,7 @@ function hook_table(source, core, parent_fake, parent_location, key)
   core.internal_tables[internal] = true
   core.fake_to_internal[source] = internal
 
-  local location = add_location(internal, parent_fake, parent_location, key)
+  add_locations(internal, parent_fake, all_parent_locations, key)
 
   -- move data to internal_data
   local k, v = next(source)
@@ -68,7 +120,7 @@ function hook_table(source, core, parent_fake, parent_location, key)
     local nk, nv = next(source, k)
     source[k] = nil
     internal_data[k] = v
-    hook_value(v, core, source, location, k)
+    hook_value(v, core, source, all_locations, k)
     k, v = nk, nv
   end
   -- source is now the fake table
@@ -78,12 +130,12 @@ function hook_table(source, core, parent_fake, parent_location, key)
   return source
 end
 
-function hook_value(value, core, parent_fake, parent_location, key)
+function hook_value(value, core, parent_fake, all_parent_locations, key)
   local internal = core.fake_to_internal[value]
   if internal then
-    return add_location(internal, parent_fake, parent_location, key)
+    return add_locations(internal, parent_fake, all_parent_locations, key)
   elseif type(value) == "table" then
-    return hook_table(value, core, parent_fake, parent_location, key)
+    return hook_table(value, core, parent_fake, all_parent_locations, key)
   end
 end
 
@@ -103,15 +155,6 @@ local function unhook_internal(fake, internal)
       fake[k] = v
       local child_internal = fake_to_internal[v]
       if child_internal then
-        -- remove all locations
-        local locations_for_parent_fakes = child_internal.locations_for_parent_fakes
-        local locations = locations_for_parent_fakes[fake]
-        if locations then
-          locations_for_parent_fakes[fake] = nil
-          for location in pairs(locations) do
-            child_internal.all_locations[location] = nil
-          end
-        end
         unhook_internal(v, child_internal) -- also unhook children
       end
     end
@@ -144,8 +187,7 @@ local function insert(fake_list, pos, value)
 
   local core = internal.core
 
-  -- HACK: using the first parent_location for now, but this won't actually do the trick
-  hook_value(value, core, fake_list, next(internal.all_locations), pos)
+  hook_value(value, core, fake_list, internal.all_locations, pos)
 
   local changes = internal.changes
   local change_count = internal.change_count + 1
@@ -196,8 +238,7 @@ meta = {
     local internal = current.__internal
     local core = internal.core
 
-    -- HACK: using the first parent_location for now, but this won't actually do the trick
-    hook_value(new_value, core, current, next(internal.all_locations), key)
+    hook_value(new_value, core, current, internal.all_locations, key)
 
     core.changed_tables[internal] = true
 

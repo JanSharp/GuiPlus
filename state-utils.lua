@@ -35,6 +35,7 @@ function hook(source, core, parent_location, key)
     data = internal_data,
     -- lowest_changed_index = nil,
     changes = {},
+    change_count = 0,
     fake = source, -- source will become the fake table
   }
 
@@ -82,8 +83,11 @@ local function insert(fake_list, pos, value)
   end
 
   local changes = internal.changes
-  changes[#changes+1] = {
+  local change_count = internal.change_count + 1
+  internal.change_count = change_count
+  changes[change_count] = {
     type = state_change.inserted,
+    key = pos,
     new = value,
   }
 end
@@ -114,20 +118,16 @@ meta = {
 
     core.changed_tables[internal] = true
 
-    -- TODO: update
     local changes = internal.changes
+    local change_count = internal.change_count + 1
+    internal.change_count = change_count
     local internal_data = internal.data
-    local change_data = changes[key]
-    if change_data then
-      change_data.new = new_value
-    else
-      change_data = {
-        type = state_change.assigned,
-        old = internal_data[key],
-        new = new_value, -- if it's a table, it's a fake table
-      }
-      changes[key] = change_data
-    end
+    changes[change_count] = {
+      type = state_change.inserted,
+      key = key,
+      old = internal_data[key],
+      new = new_value, -- if it's a table, it's a fake table
+    }
     internal_data[key] = new_value
   end,
 }

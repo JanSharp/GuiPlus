@@ -5,6 +5,10 @@ return gui.register_class{
   name = "foo",
 
   type = "frame",
+  caption = "foo",
+  elem_mods = {
+    auto_center = true,
+  },
   direction = "vertical",
   children = {
     {

@@ -24,8 +24,7 @@ local function add_location(internal, parent_fake, parent_location, key)
     locations_for_parent_fakes[parent_fake] = {location}
   end
 
-  local all_locations = internal.all_locations
-  all_locations[#all_locations+1] = location
+  internal.all_locations[location] = location
   return location
 end
 
@@ -88,6 +87,43 @@ function hook_value(value, core, parent_fake, parent_location, key)
   end
 end
 
+local function unhook_internal(fake, internal)
+  if not next(internal.all_locations) then
+    local core = internal.core
+    core.internal_tables[internal] = nil
+    core.changed_tables[internal] = nil
+    local fake_to_internal = core.fake_to_internal
+    fake_to_internal[fake] = nil
+
+    setmetatable(fake, nil)
+    fake.__internal = nil
+
+    -- move data back
+    for k, v in pairs(internal.data) do
+      fake[k] = v
+      local child_internal = fake_to_internal[v]
+      if child_internal then
+        -- remove all locations
+        local locations_for_parent_fakes = child_internal.locations_for_parent_fakes
+        local locations = locations_for_parent_fakes[fake]
+        if locations then
+          locations_for_parent_fakes[fake] = nil
+          for location in pairs(locations) do
+            child_internal.all_locations[location] = nil
+          end
+        end
+        unhook_internal(v, child_internal) -- also unhook children
+      end
+    end
+  else
+    internal.unhook_flag = true
+  end
+end
+
+local function unhook_table(fake)
+  return unhook_internal(fake, fake.__internal)
+end
+
 -- TODO: maybe make pos optional, but it would be a waste of performace imo
 -- because you can literally jsut use fake_list[#fake_list] = nil
 -- or fake_list[#fake_list+1] = value instead
@@ -109,7 +145,7 @@ local function insert(fake_list, pos, value)
   local core = internal.core
 
   -- HACK: using the first parent_location for now, but this won't actually do the trick
-  hook_value(value, core, fake_list, internal.all_location[1], pos)
+  hook_value(value, core, fake_list, next(internal.all_locations), pos)
 
   local changes = internal.changes
   local change_count = internal.change_count + 1
@@ -161,11 +197,12 @@ meta = {
     local core = internal.core
 
     -- HACK: using the first parent_location for now, but this won't actually do the trick
-    hook_value(new_value, core, current, internal.all_locations[1], key)
+    hook_value(new_value, core, current, next(internal.all_locations), key)
 
     core.changed_tables[internal] = true
 
     -- TODO: reminder to update locations of existing tables
+    -- TODO: check for unhook_flag when removing a table
 
     local changes = internal.changes
     local change_count = internal.change_count + 1
@@ -221,6 +258,7 @@ end
 return {
   create_state = create_state,
   restore_metatables = restore_metatables,
+  unhook_table = unhook_table,
   remove = remove,
   insert = insert,
   detect_moves = detect_moves,

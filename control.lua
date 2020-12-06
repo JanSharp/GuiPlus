@@ -34,6 +34,8 @@ script.on_event(defines.events.on_player_created, function(event)
   state.test = test
   test[1], test[2] = test[2], test[1]
   state.foo = test
+  state.foo = nil
+  state.test = nil
   local breakpoint
   -- creating states is alarmingly slow
   -- creating 2 states, in the process hooking 4 tables and adding locations 5 times

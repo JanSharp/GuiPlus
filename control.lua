@@ -45,6 +45,9 @@ script.on_event(defines.events.on_player_created, function(event)
   }
   state.foo.test = test
 
+  -- test.test = test -- infinte loops !
+  -- recursion bad :)
+
   local bar = state.foo.bar
   state_utils.unhook_table(bar)
 

@@ -3,22 +3,10 @@ local enums = require("enums")
 local state_change = enums.state_change
 
 local meta
-local hook
+local hook_table
+local hook_value
 
-local function initial_hook(source)
-  local core = {
-    tables = {},
-    changed_tables = {},
-    __internal = { -- HACK: i do not like this one bit
-      data = {
-        state = source, -- TODO: define this key dynamically
-      },
-    },
-  }
-  return hook(source, core, {}, "state")
-end
-
-function hook(source, core, parent_location, key)
+local function add_location(internal, parent_fake, parent_location, key)
   local location = {}
   do -- copy parent_location
     local size = #parent_location
@@ -28,10 +16,41 @@ function hook(source, core, parent_location, key)
     location[size+1] = key -- add latest key to the end
   end
 
+  local locations_for_parent_fakes = internal.locations_for_parent_fakes
+  local locations_for_parent_fake = locations_for_parent_fakes[parent_fake]
+  if locations_for_parent_fake then
+    locations_for_parent_fake[#locations_for_parent_fake+1] = location
+  else
+    locations_for_parent_fakes[parent_fake] = {location}
+  end
+
+  local all_locations = internal.all_locations
+  all_locations[#all_locations+1] = location
+  return location
+end
+
+local function initial_hook(source)
+  local fake_parent = {}
+  local core = {
+    internal_tables = {}, -- interanl => true
+    fake_to_internal = {}, -- fake => internal
+    changed_tables = {}, -- internal => true
+    __internal = { -- HACK: i do not like this one bit
+      fake = fake_parent, -- even more disgusting
+      data = {
+        state = source, -- TODO: define this key dynamically
+      },
+    },
+  }
+  return hook_table(source, core, fake_parent, {}, "state")
+end
+
+function hook_table(source, core, parent_fake, parent_location, key)
   local internal_data = {}
   local internal = {
     core = core,
-    location = location, -- location doesn't even make sense anymore. i don't even think i need it
+    all_locations = {},
+    locations_for_parent_fakes = {},
     data = internal_data,
     -- lowest_changed_index = nil,
     changes = {},
@@ -39,8 +58,10 @@ function hook(source, core, parent_location, key)
     fake = source, -- source will become the fake table
   }
 
-  -- the fact that it's using the location table as the key is very questionable
-  core.tables[location] = internal
+  core.internal_tables[internal] = true
+  core.fake_to_internal[source] = internal
+
+  local location = add_location(internal, parent_fake, parent_location, key)
 
   -- move data to internal_data
   local k, v = next(source)
@@ -48,9 +69,7 @@ function hook(source, core, parent_location, key)
     local nk, nv = next(source, k)
     source[k] = nil
     internal_data[k] = v
-    if type(v) == "table" then
-      hook(v, core, location, k)
-    end
+    hook_value(v, core, source, location, k)
     k, v = nk, nv
   end
   -- source is now the fake table
@@ -58,6 +77,15 @@ function hook(source, core, parent_location, key)
   source.__internal = internal
   setmetatable(source, meta)
   return source
+end
+
+function hook_value(value, core, parent_fake, parent_location, key)
+  local internal = core.fake_to_internal[value]
+  if internal then
+    return add_location(internal, parent_fake, parent_location, key)
+  elseif type(value) == "table" then
+    return hook_table(value, core, parent_fake, parent_location, key)
+  end
 end
 
 -- TODO: maybe make pos optional, but it would be a waste of performace imo
@@ -78,9 +106,10 @@ local function insert(fake_list, pos, value)
     end
   end
 
-  if type(value) == "table" then
-    hook(value, internal.core, internal.location, pos)
-  end
+  local core = internal.core
+
+  -- HACK: using the first parent_location for now, but this won't actually do the trick
+  hook_value(value, core, fake_list, internal.all_location[1], pos)
 
   local changes = internal.changes
   local change_count = internal.change_count + 1
@@ -90,6 +119,25 @@ local function insert(fake_list, pos, value)
     key = pos,
     new = value,
   }
+
+  local data = internal.data
+  table_insert(data, pos, value)
+
+  -- TODO: update to properly use locations_for_parent_fakes
+
+  -- update all locations past this key.
+  -- this is as performant as it's going to get
+  local tables = core.fake_to_internal
+  for i = pos + 1, #data do
+    local child = data[i]
+    local child_internal = tables[child] -- this both checks if it's a table and gets the interanl table if it is one. it's beautiful
+    if child_internal then
+      local locations_for_parent_fakes = child_internal.locations_for_parent_fakes
+      local location = locations_for_parent_fakes[fake_list]
+      location[#location] = i
+    end
+  end
+  -- TODO: move this to gui.redraw, where the location is actually used/needed
 end
 
 local function detect_moves(changes) -- TODO: either this takes a changes table or a fake table
@@ -112,9 +160,8 @@ meta = {
     local internal = current.__internal
     local core = internal.core
 
-    if type(new_value) == "table" then
-      hook(new_value, core, internal.location, key)
-    end
+    -- HACK: using the first parent_location for now, but this won't actually do the trick
+    hook_value(new_value, core, current, internal.all_locations[1], key)
 
     core.changed_tables[internal] = true
 
@@ -123,7 +170,7 @@ meta = {
     internal.change_count = change_count
     local internal_data = internal.data
     changes[change_count] = {
-      type = state_change.inserted,
+      type = state_change.assigned,
       key = key,
       old = internal_data[key],
       new = new_value, -- if it's a table, it's a fake table

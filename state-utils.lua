@@ -2,6 +2,9 @@
 local enums = require("enums")
 local state_change = enums.state_change
 
+local table_remove = table.remove
+local table_insert = table.insert
+
 local meta
 local hook_table
 local hook_value
@@ -68,7 +71,7 @@ local function remove_locations(internal, parent_locations, key)
       if location[#location] == key then
         locations_to_remove[location] = location
         all_locations[location] = nil
-        table.remove(locations, i)
+        table_remove(locations, i)
         count = count - 1
         if count == 0 then
           locations_for_parent_locations[parent_location] = nil
@@ -183,11 +186,9 @@ end
 -- because you can literally jsut use fake_list[#fake_list] = nil
 -- or fake_list[#fake_list+1] = value instead
 
-local table_remove = table.remove
 local function remove(fake_list, pos)
 end
 
-local table_insert = table.insert
 local function insert(fake_list, pos, value)
   local internal = fake_list.__internal
   do

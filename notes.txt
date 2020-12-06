@@ -1,0 +1,9 @@
+
+any propery that can change on the gui elements themselves due to other means
+such as the user toggling a switch or writing in a text field cause problems
+because updating the state to reflect the change will also cause calling of
+the dynamic value setter function of that property which is not only redundant
+but it can also cause flickering in multiplayer with latency, or maybe even in
+singleplayer
+
+it's just bad, alright.

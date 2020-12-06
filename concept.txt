@@ -1,0 +1,190 @@
+
+what does it need
+
+for creating elements
+wait this is just drawing...
+
+for handling events
+- the state
+- the scopes
+- the handler
+
+for drawing
+... well there is creating and updating
+for creating i need to know the entire gui structure
+when updating all i care about is dynamic values
+
+
+in order to know which dynamic values need updating
+i am using a table with a metatble as the state
+to track any changes made as they are made
+upon redrawing it looks up _in some way_ all the
+dynamic values that were dependent _on_ whatever changed
+can this _on_ be dynamic? not sure
+the only dynamic thing i think that might make sense is to
+use the index of a dynamic list inside the _on_ identifier.
+
+
+
+scopes:
+
+definitions:
+a list of identifiers inside state. a location definition
+
+{
+  {
+    scope_level_type = gui_scope_level.identifier,
+    id = "state",
+  },
+  {
+    scope_level_type = gui_scope_level.identifier,
+    id = "list",
+  },
+  {
+    scope_level_type = gui_scope_level.any,
+  },
+}
+
+instances:
+a list of references to locations inside the state
+specifically for every element. but since scopes are defined at class registration
+this is static, therefore a simple reference from element to the class will do.
+but what about special identifiers such as [any]?
+the scope definition is the same but it requires parameters specific to the element.
+in the case of any it's the index [any] is representing for the current element.
+
+what if i use scope parameters to provide those keys for [any]
+
+
+
+triggers:
+
+definitions:
+the same as for scopes
+
+instances:
+a lookup to quickly find all things triggered by a state change
+is this lookup also static just like scope instances?
+well kind of. the elements it's pointing to are dynamic.
+
+say i had the data structure:
+tirggers = {
+  state = {
+    dynamic_references = {
+      -- this would have literally every single element
+      -- wait this is not on a element level. it's on a dynamic value level
+      -- but elements can also be dynamic, see dynamic_list
+      points to the location of the dynamic object
+    },
+    ids = {
+      list = {
+        dynamic_instances = {
+
+        },
+        ids = {
+
+        },
+      },
+    },
+  },
+}
+
+
+
+dynamic values:
+
+definitions:
+has a trigger definition
+and a setter function
+
+can be for a value of an element or an element itself
+if it's an element, the element has a name and is therefore easily identifyable.
+see the current handle event implementation and how it finds the handler function
+if it's a value, it can be identified by the class name plus the field name it is for.
+this could be combined into one string for easy access
+
+i'll refer to these as dynamic references
+note that dynamic values cannot just add ".field_name" to the name of the class, because
+there might be a dynamic child definition with the same name as the field. it is possible
+so either make it something like "..field_name" or some other syntax
+
+instances:
+has to somehow point to the definition to know the function
+what about their scopes? the setter functions require scopes.
+dynamic_elements don't need scoping, because they don't have setter functions
+unless some do... not sure
+
+
+
+gui instances:
+
+{
+  instance_id = instance_id,
+  state = state,
+  state_core = state_core,
+  class_core_name = class_core.name,
+  class_name = main_definition.name,
+  elem = nil,
+  dynamic_objects = dynamic_objects,
+}
+
+dynamic_objects = {
+  [dynamic_object_id] = {
+    dynamic_object_id = number,
+    scope_stack_parameters = scope stack parameters,
+  },
+}
+
+dynamic_objects_per_class = {
+  ["sub_class.test4.table.list"] = {},
+  ["sub_class.test4.table.list.value..text"] = {
+    elements? = {
+      [dynamic_object_id] = {
+        dynamic_object_id = 1,
+        scope_stack_parameters = {
+          nil,
+          {
+            nil,
+            nil,
+            1,
+          },
+        },
+      }
+    }
+  }
+}
+
+
+
+example class definition:
+
+scopes_stack = {
+  {
+    {
+      scope_level_type = gui_scope_level.identifier,
+      id = "state",
+    },
+  }
+  {
+    {
+      scope_level_type = gui_scope_level.identifier,
+      id = "state",
+    },
+    {
+      scope_level_type = gui_scope_level.identifier,
+      id = "list",
+    },
+    {
+      scope_level_type = gui_scope_level.any,
+    },
+  },
+}
+
+example scope_stack_parameters = {
+  nil,
+  {
+    nil,
+    nil,
+    1,
+  },
+}

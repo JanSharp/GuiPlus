@@ -19,6 +19,7 @@ local unhook_internal
 -- HACK: for debugging
 local variables = require("__debugadapter__/variables.lua")
 local vdescribe = variables.describe
+local vcreate = variables.create
 local num = 0
 
 -- this is slow-ish because it has to copy the parent location tables
@@ -33,6 +34,7 @@ local function add_locations(internal, parent_locations, key)
   for parent_location in next, parent_locations do
     local location = {
       parent_location = parent_location,
+      children = {},
     }
     do -- HACK: for debugging
       num = num + 1
@@ -48,6 +50,13 @@ local function add_locations(internal, parent_locations, key)
           setmetatable(location, location_meta)
           return lineitem
         end,
+        __debugchildren = function()
+          local result = {}
+          for k, v in pairs(location) do
+            result[k] = vcreate(vdescribe(k), v)
+          end
+          return result
+        end,
       }
       setmetatable(location, location_meta)
     end
@@ -59,16 +68,9 @@ local function add_locations(internal, parent_locations, key)
       location[size+1] = key -- add latest key to the end
     end
 
-    local locations_for_parent_locations = internal.locations_for_parent_locations
-    local locations_for_parent_location = locations_for_parent_locations[parent_location]
-    if locations_for_parent_location then
-      locations_for_parent_location[#locations_for_parent_location+1] = location
-    else
-      locations_for_parent_locations[parent_location] = {location}
-    end
-
     all_locations[location] = location
     new_locataions[location] = location
+    parent_location.children[key] = location
   end
 
   -- TODO: don't iterate the entire data table
@@ -87,23 +89,11 @@ local function remove_locations(internal, parent_locations, key)
   local all_locations = internal.all_locations
   local locations_to_remove = {}
   for parent_location in next, parent_locations do
-    local locations_for_parent_locations = internal.locations_for_parent_locations
-    local locations = locations_for_parent_locations[parent_location]
-    local count = #locations
-    for i = count, 1, -1 do
-      local location = locations[i]
-      -- TODO: i'm pretty sure this can be imporived because you can't have the key twice,
-      -- but it's so complex that i can't paint the whole picture in my head right now
-      if location[#location] == key then
-        locations_to_remove[location] = location
-        all_locations[location] = nil
-        table_remove(locations, i)
-        count = count - 1
-        if count == 0 then
-          locations_for_parent_locations[parent_location] = nil
-        end
-      end
-    end
+    local children = parent_location.children
+    local location = children[key]
+    locations_to_remove[location] = location
+    children[key] = nil
+    all_locations[location] = nil
   end
 
   local fake_to_internal = internal.core.fake_to_internal
@@ -132,7 +122,7 @@ local function initial_hook(source)
       },
     },
   }
-  local location = {}
+  local location = {children = {}}
   return hook_table(source, core, {[location] = location}, "state")
 end
 
@@ -142,7 +132,6 @@ function hook_table(source, core, all_parent_locations, key)
   local internal = {
     core = core,
     all_locations = all_locations,
-    locations_for_parent_locations = {},
     data = internal_data,
     -- lowest_changed_index = nil,
     changes = {},
@@ -241,6 +230,8 @@ local function insert(fake_list, pos, value)
   table_insert(data, pos, value)
 
   -- TODO: update to properly use locations_for_parent_locations
+  -- lol, just don't be stupid and use the good system my dude
+  -- i'm just flaming myself at this point
 
   -- update all locations past this key.
   -- this is as performant as it's going to get

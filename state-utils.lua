@@ -10,33 +10,45 @@ local hook_table
 local hook_value
 local unhook_internal
 
--- HACK: for debugging
-local variables = require("__debugadapter__/variables.lua")
-local vdescribe = variables.describe
-local num = 0
+-- what's left?
+-- table insert and remove function
+-- detect moves function
+-- test unhooking
+-- deal with todos
+-- improve performance if at all possible
 
+-- -- HACK: for debugging
+-- local variables = require("__debugadapter__/variables.lua")
+-- local vdescribe = variables.describe
+-- local num = 0
+
+-- this is slow-ish because it has to copy the parent location tables
+-- what? why is the main loop so much slower
+-- and why is it showing 180 while the actual copy only copied 80 times
+-- i think it's 20 + 80 + 80
+-- and it's slow because... because next() probably
 local function add_locations(internal, parent_locations, key)
-  for parent_location in pairs(parent_locations) do
+  for parent_location in next, parent_locations do
     local location = {
       parent_location = parent_location,
     }
-    do -- HACK: for debugging
-      num = num + 1
-      local num_str = "<" .. tostring(num) .. ">"
-      local location_meta
-      location_meta = {
-        __debugline = function(_, short)
-          if short then
-            return num_str
-          end
-          setmetatable(location, nil)
-          local lineitem = vdescribe(location)
-          setmetatable(location, location_meta)
-          return lineitem
-        end,
-      }
-      setmetatable(location, location_meta)
-    end
+    -- do -- HACK: for debugging
+    --   num = num + 1
+    --   local num_str = "<" .. tostring(num) .. ">"
+    --   local location_meta
+    --   location_meta = {
+    --     __debugline = function(_, short)
+    --       if short then
+    --         return num_str
+    --       end
+    --       setmetatable(location, nil)
+    --       local lineitem = vdescribe(location)
+    --       setmetatable(location, location_meta)
+    --       return lineitem
+    --     end,
+    --   }
+    --   setmetatable(location, location_meta)
+    -- end
     do -- copy parent_location
       local size = #parent_location
       for i = 1, size do
@@ -57,6 +69,8 @@ local function add_locations(internal, parent_locations, key)
   end
 end
 
+-- this is slow, quite simply because it iterates so many things
+-- to improve this i need to change the data format to allow simple direct indexing to get exactly what i need
 local function remove_locations(internal, parent_locations, key)
   local all_locations = internal.all_locations
   local locations_to_remove = {}
@@ -308,7 +322,7 @@ if __DebugAdapter and script.mod_name == "GuiPlus" then
   function meta.__debugchildren(current)
     local children = {}
     local count = 1
-    for k, v in next, current, nil do
+    for k, v in next, current do
       count = count + 1
       children[count] = vcreate(vdescribe(k), v)
     end

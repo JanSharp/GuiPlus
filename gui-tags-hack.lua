@@ -37,7 +37,7 @@ do
     end,
     __pairs = function(_) -- nobody needs this
       __setup_sub_table()
-      return next, script_data, nil
+      return next, script_data
     end,
   })
 

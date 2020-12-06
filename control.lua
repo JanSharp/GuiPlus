@@ -3,6 +3,7 @@ local gui = require("gui-plus")
 
 require("gui.register-classes")
 
+local foo = require("gui.foo")
 local test4 = require("gui.test4")
 
 gui.register_event_handlers()
@@ -24,13 +25,32 @@ script.on_event(defines.events.on_player_created, function(event)
 
   gui.instantiate(player.gui.screen, test4, state)
 
+  gui.instantiate(player.gui.screen, foo, {count = 10})
+
   local test = {
     "hello",
     "world",
   }
   state.test = test
   test[1], test[2] = test[2], test[1]
+  state.foo = test
   local breakpoint
+  -- creating states is alarmingly slow
+  -- creating 2 states, in the process hooking 4 tables and adding locations 5 times
+  -- took the almost as much time as creating 8 whole gui elements
+  -- that's freaking terrible, is it not?
+  -- and the reason it's so slow is just because it does so extremely much and creates so many tables
+  -- to make it do less and therefore be faster
+  -- i'd have to take away metatables and make the programmer use function calls for every single state manipulation,
+  -- and it would still not make a huge difference. the biggest one would be that it doesn't have to do type checks
+  -- anymore, but the __newindex itself doesn't even do all that much
+  -- so no, that wouldn't even make it faster, especially not worth the trade off
+  -- it might just be that state tracking like this is just not the way to go
+  -- BUT, __newindex will have to do more in the future to detect tables no longer being used
+  -- because right now as soon as a table is hooked it will never be released
+  -- => memory leak
+  -- and it will have to update locations... if it's not already doing that... i know it's partially doing it
+  -- this will make everything even slower
 end)
 
 -- script.on_event(defines.events.on_player_created, function(event)

@@ -37,7 +37,7 @@ script.on_event(defines.events.on_player_created, function(event)
   local breakpoint
   -- creating states is alarmingly slow
   -- creating 2 states, in the process hooking 4 tables and adding locations 5 times
-  -- took the almost as much time as creating 8 whole gui elements
+  -- took almost as much time as creating 8 whole gui elements
   -- that's freaking terrible, is it not?
   -- and the reason it's so slow is just because it does so extremely much and creates so many tables
   -- to make it do less and therefore be faster

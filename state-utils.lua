@@ -165,6 +165,8 @@ meta = {
 
     core.changed_tables[internal] = true
 
+    -- TODO: reminder to update locations of existing tables
+
     local changes = internal.changes
     local change_count = internal.change_count + 1
     internal.change_count = change_count

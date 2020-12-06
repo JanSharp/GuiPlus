@@ -235,7 +235,7 @@ return gui.register_class{
               lose_focus_on_confirm = true,
               clear_and_focus_on_right_click = true,
               text = gui.dynamic{
-                on = "scopes[1].value.text", -- expands to "state.list[any].text"
+                on = "scopes[1].value.text", -- expands to "state.list[any].value.text"
                 set = function(scopes, state)
                   return scopes[1].value.text
                 end,

@@ -85,10 +85,12 @@ return gui.register_class{
       children = {
         {
           type = "label",
+          name = "key",
           caption = "key",
         },
         {
           type = "label",
+          name = "value",
           caption = "value",
         },
         gui.dynamic_list{

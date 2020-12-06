@@ -7,31 +7,6 @@ local hook_table
 local hook_value
 local unhook_internal
 
--- local function add_location(internal, parent_fake, parent_location, key)
---   local location = {
---     parent_location = parent_location,
---   }
---   do -- copy parent_location
---     local size = #parent_location
---     for i = 1, size do
---       location[i] = parent_location[i]
---     end
---     location[size+1] = key -- add latest key to the end
---   end
-
---   local locations_for_parent_locations = internal.locations_for_parent_locations
---   local locations_for_parent_location = locations_for_parent_locations[parent_fake]
---   if locations_for_parent_location then
---     locations_for_parent_location[parent_location] = location
---   else
---     locations_for_parent_locations[parent_fake] = {
---       [parent_location] = location,
---     }
---   end
-
---   internal.all_locations[location] = location
--- end
-
 -- HACK: for debugging
 local variables = require("__debugadapter__/variables.lua")
 local vdescribe = variables.describe

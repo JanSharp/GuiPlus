@@ -73,7 +73,7 @@ local gui = require("gui-plus")
 local tostring = tostring
 
 return gui.register_class{
-  class_name = "bar",
+  name = "bar",
 
   type = "frame",
   direction = "vertical",

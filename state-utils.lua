@@ -73,18 +73,12 @@ local function add_locations(internal, parent_locations, key)
     parent_location.children[key] = location
   end
 
-  -- TODO: don't iterate the entire data table
-  local fake_to_internal = internal.core.fake_to_internal
-  for child_key, child in next, internal.data do
-    local child_internal = fake_to_internal[child]
-    if child_internal then
-      add_locations(child_internal, new_locataions, child_key)
-    end
+  -- add the new location to all sub tables as well
+  for child_key, child_table in next, internal.child_tables do
+    add_locations(child_table.__internal, new_locataions, child_key)
   end
 end
 
--- this is slow, quite simply because it iterates so many things
--- to improve this i need to change the data format to allow simple direct indexing to get exactly what i need
 local function remove_locations(internal, parent_locations, key)
   local all_locations = internal.all_locations
   local locations_to_remove = {}
@@ -96,13 +90,8 @@ local function remove_locations(internal, parent_locations, key)
     all_locations[location] = nil
   end
 
-  -- TODO: don't iterate the entire data table
-  local fake_to_internal = internal.core.fake_to_internal
-  for child_key, child in next, internal.data do
-    local child_internal = fake_to_internal[child]
-    if child_internal then
-      remove_locations(child_internal, locations_to_remove, child_key)
-    end
+  for child_key, child_table in next, internal.child_tables do
+    remove_locations(child_table.__internal, locations_to_remove, child_key)
   end
 
   if internal.unhook_flag then
@@ -134,6 +123,7 @@ function hook_table(source, core, all_parent_locations, key)
     core = core,
     all_locations = all_locations,
     data = internal_data,
+    child_tables = {},
     -- lowest_changed_index = nil,
     changes = {},
     change_count = 0,
@@ -151,7 +141,7 @@ function hook_table(source, core, all_parent_locations, key)
     local nk, nv = next(source, k)
     source[k] = nil
     internal_data[k] = v
-    hook_value(v, core, all_locations, k)
+    hook_value(v, core, internal, all_locations, k)
     k, v = nk, nv
   end
   -- source is now the fake table
@@ -161,11 +151,13 @@ function hook_table(source, core, all_parent_locations, key)
   return source
 end
 
-function hook_value(value, core, all_parent_locations, key)
+function hook_value(value, core, parent, all_parent_locations, key)
   local internal = core.fake_to_internal[value]
   if internal then
+    parent.child_tables[key] = value
     return add_locations(internal, all_parent_locations, key)
   elseif type(value) == "table" then
+    parent.child_tables[key] = value
     return hook_table(value, core, all_parent_locations, key)
   end
 end
@@ -216,7 +208,7 @@ local function insert(fake_list, pos, value)
 
   local core = internal.core
 
-  hook_value(value, core, internal.all_locations, pos)
+  hook_value(value, core, internal, internal.all_locations, pos)
 
   local changes = internal.changes
   local change_count = internal.change_count + 1
@@ -273,11 +265,12 @@ meta = {
     local old_value = internal_data[key]
     if new_value ~= old_value then
       local all_locations = internal.all_locations
-      hook_value(new_value, core, all_locations, key)
+      hook_value(new_value, core, internal, all_locations, key)
 
       local fake_to_internal = core.fake_to_internal
       local old_internal = fake_to_internal[old_value]
       if old_internal then
+        internal.child_tables[key] = nil
         remove_locations(old_internal, all_locations, key)
       end
     end

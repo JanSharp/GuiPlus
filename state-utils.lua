@@ -96,6 +96,7 @@ local function remove_locations(internal, parent_locations, key)
     all_locations[location] = nil
   end
 
+  -- TODO: don't iterate the entire data table
   local fake_to_internal = internal.core.fake_to_internal
   for child_key, child in next, internal.data do
     local child_internal = fake_to_internal[child]

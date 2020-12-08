@@ -197,40 +197,11 @@ local function unhook_table(fake)
   return unhook_internal(fake, fake.__internal)
 end
 
--- TODO: maybe make pos optional, but it would be a waste of performace imo
--- because you can literally jsut use fake_list[#fake_list] = nil
--- or fake_list[#fake_list+1] = value instead
-
-local function remove(fake_list, pos)
-end
-
-local function insert(fake_list, pos, value)
-  local internal = fake_list.__internal
-  do
-    local lowest_changed_index = internal.lowest_changed_index
-    if not lowest_changed_index or pos < lowest_changed_index then
-      internal.lowest_changed_index = pos
-    end
-  end
-
-  local core = internal.core
-
-  -- add change
-  local changes = internal.changes
-  local change_count = internal.change_count + 1
-  internal.change_count = change_count
-  changes[change_count] = {
-    type = state_change.inserted,
-    key = pos,
-    new = value,
-  }
-
-  -- update all positions in child_tables and location children
-  local size = #internal.data
+local function update_positions_in_child_tables_and_location_children(internal, start_pos, end_pos, direction)
   local child_tables = internal.child_tables
   local all_locations = internal.all_locations
-  for i = size, pos, -1 do
-    local target_i = i + 1
+  for i = start_pos, end_pos, direction do
+    local target_i = i - direction
     child_tables[target_i] = child_tables[i]
 
     for location in next, all_locations do
@@ -247,13 +218,59 @@ local function insert(fake_list, pos, value)
     end
   end
   for location in next, all_locations do
-    location.children[pos] = nil
+    location.children[end_pos] = nil
   end
+end
 
-  hook_value(value, core, internal, all_locations, pos)
-
-  -- insert in actual data
+local function remove(fake_list, pos)
+  local internal = fake_list.__internal
+  do
+    local lowest_changed_index = internal.lowest_changed_index
+    if not lowest_changed_index or pos < lowest_changed_index then
+      internal.lowest_changed_index = pos
+    end
+  end
   local data = internal.data
+
+  -- add change
+  local changes = internal.changes
+  local change_count = internal.change_count + 1
+  internal.change_count = change_count
+  changes[change_count] = {
+    type = state_change.removed,
+    key = pos,
+    old = data[pos],
+  }
+
+  update_positions_in_child_tables_and_location_children(internal, pos + 1, #data, 1)
+
+  return table_remove(data, pos)
+end
+
+local function insert(fake_list, pos, value)
+  local internal = fake_list.__internal
+  do
+    local lowest_changed_index = internal.lowest_changed_index
+    if not lowest_changed_index or pos < lowest_changed_index then
+      internal.lowest_changed_index = pos
+    end
+  end
+  local data = internal.data
+
+  -- add change
+  local changes = internal.changes
+  local change_count = internal.change_count + 1
+  internal.change_count = change_count
+  changes[change_count] = {
+    type = state_change.inserted,
+    key = pos,
+    new = value,
+  }
+
+  update_positions_in_child_tables_and_location_children(internal, #data, pos, -1)
+
+  hook_value(value, internal.core, internal, internal.all_locations, pos)
+
   return table_insert(data, pos, value)
 
   -- TODO: move this to gui.redraw, where the location is actually used/needed

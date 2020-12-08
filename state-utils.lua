@@ -99,6 +99,13 @@ local function remove_locations(internal, parent_locations, key)
   end
 end
 
+local function update_child_locations(location, level_to_update, new_key)
+  for _, child_location in next, location.children do
+    child_location[level_to_update] = new_key
+    update_child_locations(child_location, level_to_update, new_key)
+  end
+end
+
 local function initial_hook(source)
   -- local fake_parent = {}
   local core = {
@@ -208,8 +215,7 @@ local function insert(fake_list, pos, value)
 
   local core = internal.core
 
-  hook_value(value, core, internal, internal.all_locations, pos)
-
+  -- add change
   local changes = internal.changes
   local change_count = internal.change_count + 1
   internal.change_count = change_count
@@ -219,26 +225,39 @@ local function insert(fake_list, pos, value)
     new = value,
   }
 
-  local data = internal.data
-  table_insert(data, pos, value)
+  -- update all positions in child_tables and location children
+  local size = #internal.data
+  local child_tables = internal.child_tables
+  local all_locations = internal.all_locations
+  for i = size, pos, -1 do
+    local target_i = i + 1
+    child_tables[target_i] = child_tables[i]
 
-  -- TODO: update to properly use locations_for_parent_locations
-  -- lol, just don't be stupid and use the good system my dude
-  -- i'm just flaming myself at this point
-
-  -- update all locations past this key.
-  -- this is as performant as it's going to get
-  local tables = core.fake_to_internal
-  for i = pos + 1, #data do
-    local child = data[i]
-    local child_internal = tables[child] -- this both checks if it's a table and gets the interanl table if it is one. it's beautiful
-    if child_internal then
-      local locations_for_parent_locations = child_internal.locations_for_parent_locations
-      local location = locations_for_parent_locations[fake_list]
-      location[#location] = i
+    for location in next, all_locations do
+      local children = location.children
+      local child_location = children[i]
+      if child_location then
+        children[target_i] = child_location
+        local level_to_update = #location+1
+        child_location[level_to_update] = target_i
+        update_child_locations(child_location, level_to_update, target_i)
+      else
+        children[target_i] = nil
+      end
     end
   end
+  for location in next, all_locations do
+    location.children[pos] = nil
+  end
+
+  hook_value(value, core, internal, all_locations, pos)
+
+  -- insert in actual data
+  local data = internal.data
+  return table_insert(data, pos, value)
+
   -- TODO: move this to gui.redraw, where the location is actually used/needed
+  -- actually i'm not sure if i can move this out of here
 end
 
 local function detect_moves(changes) -- TODO: either this takes a changes table or a fake table

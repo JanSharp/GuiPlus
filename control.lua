@@ -31,29 +31,15 @@ script.on_event(defines.events.on_player_created, function(event)
 
   local state = state_utils.create_state()
 
-  local test = {
+  local list = {
     "hello",
+    {{{}}},
     "world",
-    deep = {"i'm deeply nested :)"},
   }
-  local deep = test.deep
-  state.foo = {
-    bar = {
-      test = test,
-    },
-    -- test = test,
-  }
-  state.foo.test = test
 
-  -- test.test = test -- infinte loops !
-  -- recursion bad :)
+  state.list = list
 
-  local bar = state.foo.bar
-  state_utils.unhook_table(bar)
-
-  state.foo.bar = nil
-
-  state.foo.test = nil
+  state_utils.insert(list, 2, "new")
 
   local breakpoint
   -- creating states is alarmingly slow

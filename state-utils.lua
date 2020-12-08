@@ -11,7 +11,6 @@ local hook_value
 local unhook_internal
 
 -- what's left?
--- table insert and remove function
 -- detect moves function
 -- deal with todos
 -- improve performance if at all possible
@@ -198,6 +197,8 @@ local function unhook_table(fake)
 end
 
 local function update_positions_in_child_tables_and_location_children(internal, start_pos, end_pos, direction)
+  -- maybe all of this can be done in gui.redraw where locations are actually used
+  -- but i don't really think so
   local child_tables = internal.child_tables
   local all_locations = internal.all_locations
   for i = start_pos, end_pos, direction do
@@ -272,12 +273,9 @@ local function insert(fake_list, pos, value)
   hook_value(value, internal.core, internal, internal.all_locations, pos)
 
   return table_insert(data, pos, value)
-
-  -- TODO: move this to gui.redraw, where the location is actually used/needed
-  -- actually i'm not sure if i can move this out of here
 end
 
-local function detect_moves(changes) -- TODO: either this takes a changes table or a fake table
+local function detect_moves(changes) -- either this takes a changes table or a fake table
 end
 
 meta = {

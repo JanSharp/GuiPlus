@@ -10,9 +10,8 @@ local hook_table
 local hook_value
 local unhook_internal
 
--- what's left?
+-- TODO: what's left?
 -- detect moves function
--- deal with todos
 -- improve performance if at all possible
 
 -- HACK: for debugging
@@ -105,21 +104,22 @@ local function update_child_locations(location, level_to_update, new_key)
   end
 end
 
-local function initial_hook(source)
-  -- local fake_parent = {}
+local function initial_hook(source, source_name)
+  local location = {children = {}}
+  local all_locations = {[location] = location}
   local core = {
     internal_tables = {}, -- interanl => true
     fake_to_internal = {}, -- fake => internal
     changed_tables = {}, -- internal => true
-    __internal = { -- HACK: i do not like this one bit
-      -- fake = fake_parent, -- even more disgusting
+
+    __internal = { -- HACK: i do not like this one bit, but it helps keep things generic
+      all_locations = all_locations,
       data = {
-        state = source, -- TODO: define this key dynamically
+        [source_name] = source,
       },
     },
   }
-  local location = {children = {}}
-  return hook_table(source, core, {[location] = location}, "state")
+  return hook_table(source, core, all_locations, source_name)
 end
 
 function hook_table(source, core, all_parent_locations, key)
@@ -334,9 +334,9 @@ meta = {
   end,
 }
 
-local function create_state(initial_state)
+local function create_state(initial_state, state_name)
   local state = initial_state or {}
-  initial_hook(state)
+  initial_hook(state, state_name or "state")
   return state, state.__internal.core
 end
 

@@ -275,7 +275,17 @@ local function insert(fake_list, pos, value)
   return table_insert(data, pos, value)
 end
 
-local function detect_moves(changes) -- either this takes a changes table or a fake table
+--- modifies the changes of the fake table
+local function detect_moves(fake)
+  local internal = fake.__intenral
+  local changes = internal.chagnes
+  local change_count = internal.change_count
+
+end
+
+local function get_changes(fake)
+  local internal = fake.__internal
+  return internal.changes, internal.change_count
 end
 
 meta = {
@@ -289,7 +299,7 @@ meta = {
     -- which would requrie a new metatable for every internal table
     -- might be worth doing, not sure yet
     return current.__internal.data[key]
-    -- don't even need to check if it's a table because the itnernal data is storing tables as fake tables
+    -- don't even need to check if it's a table because the internal data is storing tables as fake tables
   end,
   __newindex = function(current, key, new_value)
     local internal = current.__internal
@@ -307,20 +317,20 @@ meta = {
         internal.child_tables[key] = nil
         remove_locations(old_internal, all_locations, key)
       end
+
+      core.changed_tables[internal] = true
+
+      local changes = internal.changes
+      local change_count = internal.change_count + 1
+      internal.change_count = change_count
+      changes[change_count] = {
+        type = state_change.assigned,
+        key = key,
+        old = old_value,
+        new = new_value, -- if it's a table, it's a fake table
+      }
+      internal_data[key] = new_value
     end
-
-    core.changed_tables[internal] = true
-
-    local changes = internal.changes
-    local change_count = internal.change_count + 1
-    internal.change_count = change_count
-    changes[change_count] = {
-      type = state_change.assigned,
-      key = key,
-      old = old_value,
-      new = new_value, -- if it's a table, it's a fake table
-    }
-    internal_data[key] = new_value
   end,
 }
 
@@ -368,4 +378,5 @@ return {
   remove = remove,
   insert = insert,
   detect_moves = detect_moves,
+  get_changes = get_changes,
 }

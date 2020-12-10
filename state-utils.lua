@@ -10,10 +10,6 @@ local hook_table
 local hook_value
 local unhook_internal
 
--- TODO: what's left?
--- detect moves function
--- improve performance if at all possible
-
 -- HACK: for debugging
 local variables = require("__debugadapter__/variables.lua")
 local vdescribe = variables.describe
@@ -280,7 +276,7 @@ local function detect_moves(fake)
   local internal = fake.__intenral
   local changes = internal.chagnes
   local change_count = internal.change_count
-
+  -- TODO: impl
 end
 
 local function get_changes(fake)

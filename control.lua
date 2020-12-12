@@ -33,14 +33,16 @@ script.on_event(defines.events.on_player_created, function(event)
 
   local list = {
     "hello",
-    {{{}}},
     "world",
+    "!",
   }
-
   state.list = list
 
-  state_utils.insert(list, 2, "new")
-  state_utils.remove(list, 2)
+  state_utils.insert(list, 1, "!")
+  state_utils.insert(list, 3, "something else")
+  list[3] = "hello"
+  list[2] = "hi"
+  state_utils.remove(list, 5)
 
   local breakpoint
   -- creating states is alarmingly slow

@@ -276,6 +276,24 @@ local function detect_moves(fake)
   local internal = fake.__intenral
   local changes = internal.chagnes
   local change_count = internal.change_count
+
+  local adds = {}
+  local removes = {}
+  local result = {}
+
+  for i = 1, change_count do
+    local change = changes[i]
+    local change_type = change.type
+    if change_type == state_change.assigned then
+      adds[#adds+1] = {
+        key = change.key,
+
+      }
+    elseif change_type == state_change.inserted then
+    elseif change_type == state_change.removed then
+    end
+  end
+
   -- TODO: impl
 end
 

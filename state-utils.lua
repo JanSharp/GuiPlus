@@ -11,7 +11,7 @@ local hook_value
 local unhook_internal
 
 -- HACK: for debugging
-local variables = require("__debugadapter__/variables.lua")
+local variables = require("__debugadapter__.variables")
 local vdescribe = variables.describe
 local vcreate = variables.create
 local num = 0
@@ -442,7 +442,7 @@ end
 -- undo the debugger being smart and using pairs, therefore __pairs for debugchildren
 -- helps debugging the actual state while working on gui-plus
 if __DebugAdapter and script.mod_name == "GuiPlus" then
-  local variables = require("__debugadapter__/variables.lua")
+  local variables = require("__debugadapter__.variables")
   local vdescribe = variables.describe
   local vcreate = variables.create
 

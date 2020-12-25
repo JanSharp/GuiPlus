@@ -34,6 +34,7 @@ if __DebugAdapter then
         return "enums." .. enum_name .. "." .. lookup[enum_value.__value]
       end,
       __debugchildren = false,
+      __debugtype = "number",
     }
     for value_name, value in pairs(values) do
       values[value_name] = setmetatable(

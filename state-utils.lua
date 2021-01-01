@@ -10,12 +10,6 @@ local hook_table
 local hook_value
 local unhook_internal
 
--- HACK: for debugging
-local variables = require("__debugadapter__.variables")
-local vdescribe = variables.describe
-local vcreate = variables.create
-local num = 0
-
 -- this is slow-ish because it has to copy the parent location tables
 -- what? why is the main loop so much slower
 -- and why is it showing 180 while the actual copy only copied 80 times
@@ -30,30 +24,6 @@ local function add_locations(internal, parent_locations, key)
       parent_location = parent_location,
       children = {},
     }
-    do -- HACK: for debugging
-      num = num + 1
-      local num_str = "<" .. tostring(num) .. ">"
-      local location_meta
-      location_meta = {
-        __debugline = function(_, short)
-          if short then
-            return num_str
-          end
-          setmetatable(location, nil)
-          local lineitem = vdescribe(location)
-          setmetatable(location, location_meta)
-          return lineitem
-        end,
-        __debugchildren = function()
-          local result = {}
-          for k, v in pairs(location) do
-            result[k] = vcreate(vdescribe(k), v)
-          end
-          return result
-        end,
-      }
-      setmetatable(location, location_meta)
-    end
     do -- copy parent_location
       local size = #parent_location
       for i = 1, size do

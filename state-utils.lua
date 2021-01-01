@@ -241,111 +241,6 @@ local function insert(fake_list, pos, value)
   return table_insert(data, pos, value)
 end
 
---- modifies the changes of the fake table
-local function detect_moves(fake)
-  local internal = fake.__intenral
-  local changes = internal.chagnes
-  local change_count = internal.change_count
-
-  local diff_keys = {}
-  local diffs = {}
-
-  local addition_indexes = {}
-  local subtractions = {}
-
-  local result_changes = {}
-
-  local function evaluate_correct_old_key(other_key, other_change_index, change_index)
-    for i = other_change_index + 1, change_index - 1 do
-      if diff_keys[i] <= other_key then
-        other_key = other_key + diffs[i]
-      end
-    end
-    return other_key
-  end
-
-  local result_index = 1
-  for change_index = 1, change_count do
-    local change = changes[change_index]
-    local change_type = change.type
-
-    if change_type == state_change.assigned then
-
-      local old = change.old
-      if old then
-
-      end
-
-
-      local new = change.new
-
-      if new then
-
-      end
-
-    elseif change_type == state_change.inserted then
-
-      local new = change.new
-      addition_indexes[new] = change_index
-
-    elseif change_type == state_change.removed then
-
-      local old_value = change.old
-
-      local addition_change_index = addition_indexes[old_value]
-      if addition_change_index then
-        addition_indexes[old_value] = nil
-        local other_change = change[addition_change_index]
-        if other_change.type == state_change.assigned then
-          other_change.new = nil
-        else
-          result_changes[(addition_change_index - 1) * 2 + 1] = nil
-        end
-
-        local old_key = evaluate_correct_old_key(other_change.key, addition_change_index, change_index)
-        local new_key = change.key
-        if old_key ~= new_key then -- TODO: actually how common would it even be for them to be equal? pretty uncommon, no?
-          result_changes[result_index] = {
-            type = state_change.moved,
-            old_key = old_key,
-            new_key = new_key,
-            value = old_value,
-          }
-        end
-      else
-        diff_keys[change_index] = change.key
-        diffs[change_index] = -1
-        subtractions[old_value] = change_index
-
-        result_changes[result_index] = change
-      end
-
-    end
-    result_index = result_index + 2
-  end
-
-  internal.changes = result_changes
-
-  -- local adds = {}
-  -- local removes = {}
-  -- local result = {}
-
-  -- for i = 1, change_count do
-  --   local change = changes[i]
-  --   local change_type = change.type
-  --   if change_type == state_change.assigned then
-  --     adds[#adds+1] = {
-  --       key = change.key,
-
-  --     }
-  --   elseif change_type == state_change.inserted then
-  --   elseif change_type == state_change.removed then
-  --   end
-  -- end
-
-  -- TODO: impl
-end
-
 local function get_changes(fake)
   local internal = fake.__internal
   return internal.changes, internal.change_count
@@ -440,6 +335,5 @@ return {
   unhook_table = unhook_table,
   remove = remove,
   insert = insert,
-  detect_moves = detect_moves,
   get_changes = get_changes,
 }

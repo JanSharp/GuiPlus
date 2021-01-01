@@ -28,22 +28,6 @@ script.on_event(defines.events.on_player_created, function(event)
 
   -- gui.instantiate(player.gui.screen, foo, {count = 10})
 
-
-  local state = state_utils.create_state()
-
-  local list = {
-    "hello",
-    "world",
-    "!",
-  }
-  state.list = list
-
-  state_utils.insert(list, 1, "!")
-  state_utils.insert(list, 3, "something else")
-  list[3] = "hello"
-  list[2] = "hi"
-  state_utils.remove(list, 5)
-
   local breakpoint
   -- creating states is alarmingly slow
   -- creating 2 states, in the process hooking 4 tables and adding locations 5 times

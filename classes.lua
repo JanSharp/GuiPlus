@@ -22,6 +22,7 @@
 ---@field changes StateChange[]
 ---@field change_count integer
 ---@field fake StateFake
+---@field unhook_flag boolean @ should this table be unhooked as soon as it is no longer referenced anywhere
 
 ---@class StateLocation
 ---@field parent_location StateLocation

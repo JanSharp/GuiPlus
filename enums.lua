@@ -21,6 +21,7 @@ local enums = {
 -- replace numbers with tables with metamethods to display
 -- enum names instead of raw numbers
 if __DebugAdapter then
+  __DebugAdapter.defineGlobal("enums")
   _ENV["enums"..""] = enums -- for the variables view and debug console
   -- concat for it to not be considered a defined global
 

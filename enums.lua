@@ -1,15 +1,18 @@
 
 local enums = {
+  ---@class EnumGuiDefinition
   gui_definition = {
     class_core = 1,
     class = 2,
     scope = 3,
     dynamic_list = 4,
   },
+  ---@class EnumGuiScopeLevel
   gui_scope_level = {
     identifier = 1,
     any = 2,
   },
+  ---@class EnumStateChange
   state_change = {
     assigned = 1,
     removed = 2,

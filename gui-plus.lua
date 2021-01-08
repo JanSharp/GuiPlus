@@ -4,7 +4,7 @@ local gui_definition = enums.gui_definition
 local gui_scope_level = enums.gui_scope_level
 local gui_events = require("gui-events")
 local ids = require("identifiers")
-local state_utils = require("state-utils")
+local state_util = require("state-util")
 
 local mod_name = script.mod_name
 
@@ -307,7 +307,7 @@ function build_child(instance, parent_element, child_definition)
 end
 
 local function instantiate(parent_elem, class_core, initial_state)
-  local state, state_core = state_utils.create_state(initial_state)
+  local state, state_core = state_util.create_state(initial_state)
   local main_definition = class_core.main_definition
   local instance_id = #instances + 1
   local instance = {
@@ -391,7 +391,7 @@ local function on_load()
   instances = script_data.instances
 
   -- restore state metatables
-  local restore_metatables = state_utils.restore_metatables
+  local restore_metatables = state_util.restore_metatables
   for _, instance in pairs(instances) do
     restore_metatables(instance.state)
   end

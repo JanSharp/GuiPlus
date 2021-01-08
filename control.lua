@@ -1,6 +1,6 @@
 
 local gui = require("gui-plus")
-local state_utils = require("state-utils")
+local state_util = require("state-util")
 
 require("gui.register-classes")
 

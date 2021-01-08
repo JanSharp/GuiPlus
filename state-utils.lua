@@ -15,6 +15,10 @@ local unhook_internal
 -- and why is it showing 180 while the actual copy only copied 80 times
 -- i think it's 20 + 80 + 80
 -- and it's slow because... because next() probably
+
+---@param internal StateInternal
+---@param parent_locations StateAllLocations
+---@param key any
 local function add_locations(internal, parent_locations, key)
   local all_locations = internal.all_locations
   local new_locataions = {}
@@ -43,6 +47,9 @@ local function add_locations(internal, parent_locations, key)
   end
 end
 
+---@param internal StateInternal
+---@param parent_locations StateAllLocations
+---@param key any
 local function remove_locations(internal, parent_locations, key)
   local all_locations = internal.all_locations
   local locations_to_remove = {}
@@ -70,13 +77,16 @@ local function update_child_locations(location, level_to_update, new_key)
   end
 end
 
+---@param source table
+---@param source_name string
+---@return StateFake
 local function initial_hook(source, source_name)
   local location = {children = {}}
   local all_locations = {[location] = location}
   local core = {
-    internal_tables = {}, -- interanl => true
-    fake_to_internal = {}, -- fake => internal
-    changed_tables = {}, -- internal => true
+    internal_tables = {},
+    fake_to_internal = {},
+    changed_tables = {},
 
     __internal = { -- HACK: i do not like this one bit, but it helps keep things generic
       all_locations = all_locations,
@@ -88,6 +98,11 @@ local function initial_hook(source, source_name)
   return hook_table(source, core, all_locations, source_name)
 end
 
+---@param source table
+---@param core StateCore
+---@param all_parent_locations StateAllLocations
+---@param key any
+---@return StateFake @ the table source gets modified to become this return value
 function hook_table(source, core, all_parent_locations, key)
   local internal_data = {}
   local all_locations = {}
@@ -123,6 +138,12 @@ function hook_table(source, core, all_parent_locations, key)
   return source
 end
 
+---@param value any
+---@param core StateCore
+---@param parent StateInternal
+---@param all_parent_locations StateAllLocations
+---@param key any
+---@return nil | StateFake
 function hook_value(value, core, parent, all_parent_locations, key)
   local internal = core.fake_to_internal[value]
   if internal then
@@ -134,6 +155,8 @@ function hook_value(value, core, parent, all_parent_locations, key)
   end
 end
 
+---@param fake StateFake
+---@param internal StateInternal
 function unhook_internal(fake, internal)
   if not next(internal.all_locations) then
     local core = internal.core
@@ -158,10 +181,16 @@ function unhook_internal(fake, internal)
   end
 end
 
+---@param fake StateFake
+---@return nil
 local function unhook_table(fake)
   return unhook_internal(fake, fake.__internal)
 end
 
+---@param internal StateInternal
+---@param start_pos integer
+---@param end_pos integer
+---@param direction integer | "1" | "-1" @ iteration direction
 local function update_positions_in_child_tables_and_location_children(internal, start_pos, end_pos, direction)
   -- maybe all of this can be done in gui.redraw where locations are actually used
   -- but i don't really think so
@@ -189,6 +218,9 @@ local function update_positions_in_child_tables_and_location_children(internal, 
   end
 end
 
+---@param fake_list StateFake
+---@param pos integer
+---@return any @ the removed value
 local function remove(fake_list, pos)
   local internal = fake_list.__internal
   do
@@ -214,6 +246,10 @@ local function remove(fake_list, pos)
   return table_remove(data, pos)
 end
 
+---@param fake_list StateFake
+---@param pos integer
+---@param value any
+---@return nil
 local function insert(fake_list, pos, value)
   local internal = fake_list.__internal
   do
@@ -241,6 +277,9 @@ local function insert(fake_list, pos, value)
   return table_insert(data, pos, value)
 end
 
+---@param fake StateFake
+---@return StateChange
+---@return integer @ change_count
 local function get_changes(fake)
   local internal = fake.__internal
   return internal.changes, internal.change_count
@@ -292,12 +331,17 @@ meta = {
   end,
 }
 
+---@param initial_state table
+---@param state_name string @ the name associated with the root of the state/initial_state
+---@return StateFake
+---@return StateCore
 local function create_state(initial_state, state_name)
   local state = initial_state or {}
   initial_hook(state, state_name or "state")
   return state, state.__internal.core
 end
 
+---@param state StateFake
 local function restore_metatables(state)
   for _, internal in next, state.__internal.core.tables do
     setmetatable(internal.fake, meta)

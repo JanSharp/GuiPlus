@@ -70,6 +70,9 @@ local function remove_locations(internal, parent_locations, key)
   end
 end
 
+---@param location StateLocation
+---@param level_to_update integer
+---@param new_key any
 local function update_child_locations(location, level_to_update, new_key)
   for _, child_location in next, location.children do
     child_location[level_to_update] = new_key

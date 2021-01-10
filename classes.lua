@@ -25,7 +25,7 @@
 ---@field fake StateFake
 ---@field unhook_flag boolean | nil @ should this table be unhooked as soon as it is no longer referenced anywhere. Either true or nil
 
----@class StateLocation
+---@class StateLocation @ also acts as an any[] where the keys are the level/depth in the state and the value are the keys used at that level/depth
 ---@field parent_location StateLocation
 ---@field children table<any, StateLocation> @ the key is the key used in the actual state for that location
 

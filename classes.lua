@@ -1,4 +1,7 @@
 
+---@alias true boolean
+---@alias false boolean
+
 ---@alias StateFake State
 ---@alias StateAllLocations table<StateLocation, StateLocation>
 
@@ -8,7 +11,7 @@
 ---@class StateCore
 ---@field internal_tables table<StateInternal, true>
 ---@field fake_to_internal table<State, StateFake>
----@field changed_tables talbe<StateInternal, true>
+---@field changed_tables table<StateInternal, true>
 ---@field __internal StateCoreInternalHack
 
 ---@class StateCoreInternalHack

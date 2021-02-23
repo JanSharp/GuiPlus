@@ -367,7 +367,7 @@ if __DebugAdapter and script.mod_name == "GuiPlus" then
 
   function meta.__debugchildren(current)
     local children = {}
-    local count = 1
+    local count = 0
     for k, v in next, current do
       count = count + 1
       children[count] = vcreate(vdescribe(k), v)

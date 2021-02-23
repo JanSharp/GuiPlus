@@ -12,11 +12,11 @@
       "allowDisableBaseMod": true,
       "factorioArgs": [
         "--load-scenario",
-        "JanSharpDevEnv/Base",
+        "JanSharpDevEnv/NoBase",
       ],
       "disableExtraMods": true,
       "adjustMods": {
-        "base": true,
+        "minimal-no-base-mod": true,
         "JanSharpDevEnv": true,
         "WiderNoticeTextBoxes": true,
 
@@ -36,11 +36,11 @@
       "allowDisableBaseMod": true,
       "factorioArgs": [
         "--load-scenario",
-        "JanSharpDevEnv/Base",
+        "JanSharpDevEnv/NoBase",
       ],
       "disableExtraMods": true,
       "adjustMods": {
-        "base": true,
+        "minimal-no-base-mod": true,
         "JanSharpDevEnv": true,
         "WiderNoticeTextBoxes": true,
 

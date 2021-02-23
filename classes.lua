@@ -5,8 +5,10 @@
 ---@alias StateFake State
 ---@alias StateAllLocations table<StateLocation, StateLocation>
 
----@class State
----@field __internal StateInternal
+---@alias State any
+
+---@ class State
+---@ field __internal StateInternal
 
 ---@class StateCore
 ---@field internal_tables table<StateInternal, true>

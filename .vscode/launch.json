@@ -8,7 +8,7 @@
       "type": "factoriomod",
       "request": "launch",
       "name": "GuiPlus debug Jan#1",
-      "factorioPath": "C:/ProgramsManual/Factorio/Modding/bin/x64/factorio.exe",
+      "factorioPath": "C:/Portable/Factorio/Modding/bin/x64/factorio.exe",
       "allowDisableBaseMod": true,
       "factorioArgs": [
         "--load-scenario",
@@ -32,7 +32,7 @@
       "request": "launch",
       "hookMode": "profile",
       "name": "GuiPlus profile Jan#1",
-      "factorioPath": "C:/ProgramsManual/Factorio/Modding/bin/x64/factorio.exe",
+      "factorioPath": "C:/Portable/Factorio/Modding/bin/x64/factorio.exe",
       "allowDisableBaseMod": true,
       "factorioArgs": [
         "--load-scenario",

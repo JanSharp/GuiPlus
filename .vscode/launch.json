@@ -11,8 +11,8 @@
       "factorioPath": "C:/Portable/Factorio/Modding/bin/x64/factorio.exe",
       "allowDisableBaseMod": true,
       "factorioArgs": [
-        "--load-scenario",
-        "JanSharpDevEnv/NoBase",
+        "--load-scenario", "JanSharpDevEnv/NoBase",
+        "--window-size", "1280x720",
       ],
       "disableExtraMods": true,
       "adjustMods": {
@@ -35,8 +35,8 @@
       "factorioPath": "C:/Portable/Factorio/Modding/bin/x64/factorio.exe",
       "allowDisableBaseMod": true,
       "factorioArgs": [
-        "--load-scenario",
-        "JanSharpDevEnv/NoBase",
+        "--load-scenario", "JanSharpDevEnv/NoBase",
+        "--window-size", "1280x720",
       ],
       "disableExtraMods": true,
       "adjustMods": {
